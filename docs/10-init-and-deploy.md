@@ -23,9 +23,11 @@
 ```bash
 tcb fn deploy auth
 tcb fn deploy asset
+tcb fn deploy borrow
+tcb fn deploy user
 ```
 
-`auth` 无外部依赖（`dependencies` 为空）；`asset` 首次部署会拉 `@cloudbase/node-sdk`。
+`auth` / `asset` / `borrow` / `user` 均登记在 `admin/cloudbaserc.json`；`asset` / `borrow` / `user` 首次部署会拉 CloudBase SDK 依赖。
 
 ### 10.2.2 修改账号密码
 
@@ -102,6 +104,8 @@ tcb fn deploy <func>
   - `ams_asset.asset_no` 唯一
   - `ams_asset.business_status` / `dept_code` / `created_at` 普通索引
   - `ams_asset_log.asset_id` + `created_at` 复合索引
+  - `ams_teacher.username` 唯一，`openid` 唯一（允许 null）
+  - `ams_borrow_request.teacher_id` + `created_at`，`status`
 
 ## 10.7 云存储配置
 

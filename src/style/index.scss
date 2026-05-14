@@ -1,21 +1,164 @@
-// 测试用的 iconfont，可生效
-// @import './iconfont.css';
-
-.test {
-  // 可以通过 @apply 多个样式封装整体样式
-  @apply mt-4 ml-4;
-
-  padding-top: 4px;
-  color: red;
-}
-
 :root,
 page {
-  // 修改按主题色
-  // --wot-color-theme: #37c2bc;
+  --wot-color-theme: #0096c2;
+  --wot-color-primary: #0096c2;
+  --wot-color-primary-active: #006b8f;
+  --wot-button-primary-bg-color: #0096c2;
+  --wot-button-primary-border-color: #0096c2;
+  --wot-button-primary-color: #fff;
+  --app-color-primary: #0096c2;
+  --app-color-primary-dark: #0078a8;
+  --app-color-primary-deep: #006b8f;
+  --app-color-primary-light: #e6f7fb;
+  --app-bg-page: #f5f7fa;
+  --app-bg-card: #ffffff;
+  --app-text-title: #333333;
+  --app-text-body: #666666;
+  --app-text-muted: #999999;
+  --app-border: #e6e6e6;
+  --app-divider: #f0f0f0;
+  --app-shadow-card: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+  --app-shadow-primary: 0 8rpx 24rpx rgba(0, 150, 194, 0.12);
+}
 
-  // 修改按钮背景色
-  // --wot-button-primary-bg-color: green;
+page {
+  background-color: var(--app-bg-page);
+  color: var(--app-text-title);
+  font-size: 28rpx;
+}
+
+.page-container {
+  min-height: 100vh;
+  background-color: var(--app-bg-page);
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.scroll-container {
+  flex: 1;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.content-section {
+  padding: 20rpx 30rpx calc(env(safe-area-inset-bottom) + 120rpx);
+  box-sizing: border-box;
+}
+
+.app-card {
+  background-color: var(--app-bg-card);
+  border-radius: 16rpx;
+  padding: 30rpx;
+  box-shadow: var(--app-shadow-card);
+  box-sizing: border-box;
+}
+
+.app-card + .app-card,
+.form-section + .form-section {
+  margin-top: 24rpx;
+}
+
+.form-section {
+  background-color: var(--app-bg-card);
+  border-radius: 16rpx;
+  padding: 30rpx;
+  box-shadow: var(--app-shadow-card);
+  box-sizing: border-box;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  margin-bottom: 28rpx;
+}
+
+.title-line {
+  width: 6rpx;
+  height: 32rpx;
+  background-color: var(--app-color-primary);
+  border-radius: 3rpx;
+  margin-right: 16rpx;
+}
+
+.title-text {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--app-text-title);
+}
+
+.app-muted {
+  color: var(--app-text-muted);
+  font-size: 24rpx;
+  line-height: 1.6;
+}
+
+.service-card {
+  background-color: var(--app-bg-card);
+  border-radius: 16rpx;
+  padding: 30rpx;
+  display: flex;
+  align-items: center;
+  box-shadow: var(--app-shadow-card);
+}
+
+.service-card:active {
+  transform: scale(0.98);
+}
+
+.service-icon {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 18rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 24rpx;
+  background-color: var(--app-color-primary);
+  color: #fff;
+}
+
+.soft-icon {
+  width: 76rpx;
+  height: 76rpx;
+  border-radius: 50%;
+  background-color: var(--app-color-primary-light);
+  color: var(--app-color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.info-banner {
+  display: flex;
+  align-items: center;
+  background-color: var(--app-color-primary-light);
+  border: 1rpx solid #b3e5f0;
+  border-radius: 16rpx;
+  padding: 24rpx 30rpx;
+  color: var(--app-color-primary);
+}
+
+.error-banner {
+  background-color: #fff5f5;
+  border-left: 6rpx solid #ff4d4f;
+  border-radius: 12rpx;
+  padding: 24rpx;
+  color: #ff4d4f;
+}
+
+.list-card {
+  background-color: var(--app-bg-card);
+  border-radius: 16rpx;
+  padding: 28rpx;
+  box-shadow: var(--app-shadow-card);
+}
+
+.list-card + .list-card {
+  margin-top: 20rpx;
 }
 
 /*

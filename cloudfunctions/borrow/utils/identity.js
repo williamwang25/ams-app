@@ -4,11 +4,11 @@
  * 两类调用方：
  *   1. 管理端 Web（CloudBase JS SDK）：event.auth.token === ADMIN_PASSWORD
  *      → role: 'admin', operator { id: 'env-admin', name: '系统管理员', role: 'admin' }
- *   2. 教师端微信小程序（wx.cloud.callFunction）：cloud.getWXContext().OPENID
+ *   2. 教师端微信小程序（wx.cloud.callFunction）：wx-server-sdk getWXContext().OPENID
  *      命中 ams_teacher → role: 'teacher', operator { id: teacher._id, name, role: 'teacher' }
  *
  * 安全约束：
- *   - OPENID 不接受前端传值，只信 cloud.getWXContext()
+ *   - OPENID 不接受前端传值，只信微信云函数上下文
  *   - 管理端 token 不在小程序端使用
  *   - 各 action 入口必须显式校验角色（require('./utils/identity').requireAdmin / requireTeacher / authenticate）
  *
@@ -18,7 +18,8 @@
  */
 
 const { ADMIN_PASSWORD } = require('./credentials');
-const { db, COLLECTIONS, cloud } = require('./cloudbase');
+const { db, COLLECTIONS } = require('./cloudbase');
+const { getWxContext } = require('./wx-context');
 
 const ADMIN_OPERATOR = Object.freeze({
   id: 'env-admin',
@@ -36,7 +37,7 @@ async function authenticate(event) {
     return { ok: true, role: 'admin', operator: { ...ADMIN_OPERATOR } };
   }
 
-  const wxCtx = cloud.getWXContext();
+  const wxCtx = getWxContext();
   const OPENID = wxCtx && wxCtx.OPENID;
   if (OPENID) {
     const queryRes = await db

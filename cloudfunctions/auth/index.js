@@ -9,7 +9,7 @@
  * 鉴权契约：
  *   管理端：adminLogin 成功返回 token = ADMIN_PASSWORD；其他业务云函数比对
  *          event.auth.token === ADMIN_PASSWORD 即视为管理员。
- *   教师端：登录后**不发 token**；后续业务云函数靠 cloud.getWXContext().OPENID
+ *   教师端：登录后**不发 token**；后续业务云函数靠微信云函数上下文 OPENID
  *          反查 ams_teacher 识别身份（详见 docs/04-api-spec.md 4.6.1）。
  */
 

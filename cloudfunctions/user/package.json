@@ -1,0 +1,9 @@
+{
+  "name": "user",
+  "version": "1.0.0",
+  "description": "AMS 用户管理云函数：管理教师账号",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^3.16.0"
+  }
+}

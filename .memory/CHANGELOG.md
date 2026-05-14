@@ -13,6 +13,36 @@
 
 ---
 
+## 2026-05-14
+
+### 管理端教师用户管理上线
+
+- **类别**：云函数接口 / 管理端页面 / 配置
+- **变更**：新增 `user` 云函数，提供 `listTeachers` / `createTeacher` / `updateTeacher` / `resetTeacherPassword` / `unbindTeacherOpenid` / `deleteTeacher`，用于超管维护 `ams_teacher`；`deleteTeacher` 会阻止删除已有借用记录的教师。
+- **影响面**：管理端 `/admins` 页面、`src/modules/user/*`、`cloudbaserc.json`、`docs/04-api-spec.md`、`docs/05-admin-features.md`、`docs/10-init-and-deploy.md`。
+- **动作建议**：教师密码仍为一期明文字段 `password`；上线前需按既有待办迁移到 `password_hash` + bcrypt，并补 `ams_teacher.username` / `openid` 索引。
+
+### 教师端可借资产增加封面字段
+
+- **类别**：云函数接口 / UI 展示
+- **变更**：`borrow.searchAssets` 返回项新增 `cover_image_file_id`，取 `ams_asset.image_urls[0]`，用于教师端资产展示窗口优先渲染资产图片。
+- **影响面**：教师端借用资产页、`src/types/asset.ts`、`src/utils/cloud.ts`。
+- **动作建议**：前端仅使用该单一封面字段，不直接暴露完整图片数组；无封面时使用本地中性占位图形。
+
+### 教师端微信上下文获取修复
+
+- **类别**：云函数依赖 / 教师端鉴权
+- **变更**：`auth` 与 `borrow` 云函数新增 `wx-server-sdk` 依赖，用 `wx-server-sdk.getWXContext()` 获取小程序调用注入的 `OPENID`；数据库访问继续沿用 `@cloudbase/node-sdk`。
+- **影响面**：教师端账密登录绑定 openid、openid 免密登录、`borrow.searchAssets`、提交 / 撤回 / 归还 / 我的申请等所有依赖教师 OPENID 的 action。
+- **动作建议**：云函数已重新部署；小程序端需清缓存并重新编译，若未绑定教师账号，免密登录应返回 2003 并进入账密登录页。
+
+### 教师端可借资产搜索路径锁定
+
+- **类别**：云函数接口 / 教师端流程
+- **变更**：教师端资产搜索采用方案 B：新增 `borrow.searchAssets` action，由 `borrow` 云函数复用教师 OPENID 鉴权，只返回 `business_status=IDLE` 的可借资产精简字段。
+- **影响面**：教师端借物车资产搜索、小程序 `src/api/asset.ts`、`cloudfunctions/borrow/index.js` 与 `actions/searchAssets.js`。
+- **动作建议**：教师端不要调用管理员 `asset.list`，也不要直连 `ams_asset`；后续若启用 SDK 直连，需重新配置 CloudBase 安全规则并更新 `docs/04-api-spec.md` 4.4。
+
 ## 2026-05-11
 
 ### 项目初始化

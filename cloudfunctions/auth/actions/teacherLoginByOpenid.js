@@ -1,11 +1,11 @@
 /**
  * auth.teacherLoginByOpenid：教师 openid 免密登录。
  *
- * 入参：{}（不接受前端传 openid，只信 cloud.getWXContext()）
+ * 入参：{}（不接受前端传 openid，只信微信云函数上下文）
  * 出参：{ profile: { _id, username, name, department, phone, openid } }
  *
  * 流程（docs/04-api-spec.md 4.2.1.3）：
- *   1. 取 cloud.getWXContext().OPENID；缺失 → 2002。
+ *   1. 取 wx-server-sdk getWXContext().OPENID；缺失 → 2002。
  *   2. 用 openid 查 ams_teacher；查不到 → 2003（提示前端跳账密登录页）。
  *   3. 返回 profile（不更新任何字段，纯只读）。
  *
@@ -14,12 +14,12 @@
  *   2003 openid 未绑定教师
  */
 
-const cloud = require('@cloudbase/node-sdk');
 const { ok, err } = require('../utils/response');
 const { db, COLLECTIONS } = require('../utils/cloudbase');
+const { getWxContext } = require('../utils/wx-context');
 
 module.exports = async () => {
-  const { OPENID } = cloud.getWXContext() || {};
+  const { OPENID } = getWxContext();
   if (!OPENID) return err(2002, '缺少微信上下文，请通过小程序登录');
 
   const queryRes = await db

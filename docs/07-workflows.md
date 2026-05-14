@@ -68,7 +68,7 @@
 
 ## 7.5 借用全流程
 
-> **触发方与鉴权**：教师 action 由 `cloud.getWXContext().OPENID` → `ams_teacher` 反查；管理员 action 由 `event.auth.token === ADMIN_PASSWORD`。详见 `docs/04-api-spec.md` 4.6.1。
+> **触发方与鉴权**：教师 action 由 `wx-server-sdk.getWXContext().OPENID` → `ams_teacher` 反查；管理员 action 由 `event.auth.token === ADMIN_PASSWORD`。详见 `docs/04-api-spec.md` 4.6.1。
 > **日志统一写 `ams_asset_log`**（不另建 `ams_borrow_log`），`op_type ∈ { BORROW, RETURN }`，`related_id = ams_borrow_request._id`。
 > **所有写操作走事务**：`ams_borrow_request` + `ams_asset` + `ams_asset_log` 三处变更原子化。
 

@@ -11,6 +11,7 @@
  *     - cancel    教师：撤回未审批申请；资产 PENDING→IDLE；写 BORROW 日志
  *
  *   读操作：
+ *     - searchAssets 教师：搜索可借资产（仅 IDLE 精简字段）
  *     - listMine  教师：自己的申请列表（按状态/分页）
  *     - adminList 管理员：全量审批列表（按状态/关键字/日期/分页）
  *     - detail    管理员任意 / 教师仅本人
@@ -18,7 +19,7 @@
  *
  * 鉴权契约（docs/04-api-spec.md 4.6.1）：双身份双轨
  *   1. event.auth.token === ADMIN_PASSWORD → admin
- *   2. cloud.getWXContext().OPENID 命中 ams_teacher → teacher
+ *   2. 微信云函数上下文 OPENID 命中 ams_teacher → teacher
  *   3. 都不符 → 401
  *
  * 集合前置：ams_borrow_request / ams_asset / ams_asset_log / ams_teacher / ams_seq
@@ -31,6 +32,7 @@ const actions = {
   reject: require('./actions/reject'),
   return: require('./actions/return'),
   cancel: require('./actions/cancel'),
+  searchAssets: require('./actions/searchAssets'),
   listMine: require('./actions/listMine'),
   adminList: require('./actions/adminList'),
   detail: require('./actions/detail'),

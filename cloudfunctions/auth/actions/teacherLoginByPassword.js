@@ -5,7 +5,7 @@
  * 出参：{ profile: { _id, username, name, department, phone, openid } }
  *
  * 流程（docs/04-api-spec.md 4.2.1.2）：
- *   1. 取 cloud.getWXContext().OPENID（仅小程序云开发上下文有；不接受前端传值）。
+ *   1. 取 wx-server-sdk getWXContext().OPENID（仅小程序云开发上下文有；不接受前端传值）。
  *      没有 OPENID → 2002（缺少微信上下文）。
  *   2. ensureTeacherSeed()：若 ams_teacher 为空，幂等注入 5 条测试教师。
  *   3. 用 username 查 ams_teacher，password 比对（一期明文）。
@@ -20,10 +20,10 @@
  *   5001 数据库写入失败
  */
 
-const cloud = require('@cloudbase/node-sdk');
 const { ok, err } = require('../utils/response');
 const { db, COLLECTIONS } = require('../utils/cloudbase');
 const { ensureTeacherSeed } = require('../utils/teacher-seed');
+const { getWxContext } = require('../utils/wx-context');
 
 module.exports = async (event) => {
   const data = (event && event.data) || {};
@@ -31,7 +31,7 @@ module.exports = async (event) => {
   const password = String(data.password || '');
   if (!username || !password) return err(1001, '请输入用户名和密码');
 
-  const { OPENID } = cloud.getWXContext() || {};
+  const { OPENID } = getWxContext();
   if (!OPENID) return err(2002, '缺少微信上下文，请通过小程序登录');
 
   await ensureTeacherSeed();

@@ -119,6 +119,7 @@ export default defineManifestConfig({
   /* 小程序特有相关 */
   'mp-weixin': {
     appid: VITE_WX_APPID,
+    cloud: true,
     setting: {
       urlCheck: false,
       // 是否启用 ES6 转 ES5

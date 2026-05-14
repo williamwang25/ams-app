@@ -6,6 +6,7 @@
       "dom"
     ],
     "baseUrl": ".",
+    "target": "es2015",
     "module": "esnext",
     "moduleResolution": "bundler",
     "paths": {
@@ -25,8 +26,7 @@
       "z-paging/types",
       "./src/types/async-component.d.ts",
       "./src/types/async-import.d.ts",
-      "./src/typings.d.ts",
-      "@wot-ui/ui/global"
+      "./src/typings.d.ts"
     ],
     "allowJs": true,
     "noImplicitThis": true,
@@ -52,6 +52,8 @@
   ],
   "exclude": [
     "node_modules",
-    "dist"
+    "dist",
+    "src/pages-demo",
+    "src/uni_modules/lime-echart"
   ]
 }

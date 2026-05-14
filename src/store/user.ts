@@ -1,58 +1,134 @@
-import type { IUserInfoRes } from '@/api/types/login'
+import type { TeacherProfile } from '@/types/auth'
+import type { UserInfo } from '@/types/user'
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import {
-  getUserInfo,
-} from '@/api/login'
+  teacherLoginByOpenid as requestTeacherLoginByOpenid,
+  teacherLoginByPassword as requestTeacherLoginByPassword,
+} from '@/api/auth'
+import { CloudFunctionError } from '@/utils/cloud'
 
-// 初始化状态
-const userInfoState: IUserInfoRes = {
+const emptyUserInfo: UserInfo = {
   userId: -1,
   username: '',
   nickname: '',
   avatar: '/static/images/default-avatar.png',
+  role: '',
+  roles: [],
+}
+
+function toUserInfo(profile: TeacherProfile): UserInfo {
+  return {
+    userId: 0,
+    username: profile.username,
+    nickname: profile.name,
+    avatar: '/static/images/default-avatar.png',
+    role: 'teacher',
+    roles: ['teacher'],
+    teacherId: profile._id,
+    department: profile.department,
+    phone: profile.phone,
+  }
 }
 
 export const useUserStore = defineStore(
   'user',
   () => {
-    // 定义用户信息
-    const userInfo = ref<IUserInfoRes>({ ...userInfoState })
-    // 设置用户信息
-    const setUserInfo = (val: IUserInfoRes) => {
-      console.log('设置用户信息', val)
-      // 若头像为空 则使用默认头像
-      if (!val.avatar) {
-        val.avatar = userInfoState.avatar
+    const profile = ref<TeacherProfile | null>(null)
+    const legacyUserInfo = ref<UserInfo>({ ...emptyUserInfo })
+    const bootstrapping = ref(false)
+    let bootstrapTask: Promise<TeacherProfile | null> | null = null
+
+    const userInfo = computed<UserInfo>(() => {
+      return profile.value ? toUserInfo(profile.value) : legacyUserInfo.value
+    })
+
+    const hasLogin = computed(() => Boolean(profile.value))
+
+    function setProfile(value: TeacherProfile) {
+      profile.value = value
+      legacyUserInfo.value = toUserInfo(value)
+    }
+
+    function clearProfile() {
+      profile.value = null
+      legacyUserInfo.value = { ...emptyUserInfo }
+    }
+
+    async function loginByPassword(username: string, password: string) {
+      const result = await requestTeacherLoginByPassword(username, password)
+      setProfile(result.profile)
+      return result.profile
+    }
+
+    async function loginByOpenid() {
+      const result = await requestTeacherLoginByOpenid()
+      if (result) {
+        setProfile(result)
       }
-      userInfo.value = val
+      return result
     }
-    const setUserAvatar = (avatar: string) => {
-      userInfo.value.avatar = avatar
-      console.log('设置用户头像', avatar)
-      console.log('userInfo', userInfo.value)
+
+    async function bootstrapAuth() {
+      if (profile.value) {
+        return profile.value
+      }
+      if (bootstrapTask) {
+        return bootstrapTask
+      }
+      bootstrapping.value = true
+      bootstrapTask = loginByOpenid()
+        .catch((error: unknown) => {
+          if (error instanceof CloudFunctionError && (error.code === 2002 || error.code === 2003)) {
+            return null
+          }
+          throw error
+        })
+        .finally(() => {
+          bootstrapping.value = false
+          bootstrapTask = null
+        })
+      return bootstrapTask
     }
-    // 删除用户信息
-    const clearUserInfo = () => {
-      userInfo.value = { ...userInfoState }
+
+    function logout() {
+      clearProfile()
       uni.removeStorageSync('user')
     }
 
-    /**
-     * 获取用户信息
-     */
-    const fetchUserInfo = async () => {
-      const res = await getUserInfo()
-      setUserInfo(res)
-      return res
+    function setUserInfo(value: UserInfo) {
+      legacyUserInfo.value = value.avatar
+        ? value
+        : { ...value, avatar: emptyUserInfo.avatar }
+    }
+
+    function setUserAvatar(avatar: string) {
+      legacyUserInfo.value = { ...legacyUserInfo.value, avatar }
+    }
+
+    function clearUserInfo() {
+      clearProfile()
+    }
+
+    async function fetchUserInfo() {
+      return userInfo.value
     }
 
     return {
+      profile,
       userInfo,
+      bootstrapping,
+      hasLogin,
+      bootstrapAuth,
+      clearProfile,
       clearUserInfo,
       fetchUserInfo,
-      setUserInfo,
+      loginByOpenid,
+      loginByPassword,
+      logout,
+      setProfile,
       setUserAvatar,
+      setUserInfo,
     }
   },
   {

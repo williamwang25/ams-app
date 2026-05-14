@@ -18,10 +18,24 @@
 
 ## 已完成
 
+### 2026-05-14
+
+- **管理端教师用户管理完成并上线**：新增 `cloudfunctions/user` Event 云函数（`listTeachers` / `createTeacher` / `updateTeacher` / `resetTeacherPassword` / `unbindTeacherOpenid` / `deleteTeacher`），超管 token 鉴权，列表不返回 `password`，删除教师会检查 `ams_borrow_request` 防止历史单据失去归属；`cloudbaserc.json` 已登记 `user`。
+- **管理端 `/admins` 替换占位为真实教师账号管理页**：新增 `src/modules/user/types.ts` / `api.ts`，页面支持关键字 / 部门 / 微信绑定状态筛选，新增教师、编辑资料、重置临时密码、解绑微信、删除教师；同步更新 `docs/04-api-spec.md`、`docs/05-admin-features.md`、`docs/10-init-and-deploy.md` 与 `.memory/CHANGELOG.md`。
+- **教师用户管理自检与云端 smoke 通过**：`node --check cloudfunctions/user/**/*.js`、`vue-tsc --noEmit`、ESLint、`npm run build` 通过；已在 `ams-d8grnwwy6d8da557f` 创建 `user` 云函数并云端验证教师列表 + 临时教师 create/update/reset/unbind/delete，临时账号已删除。
+- **教师端 CloudBase 调用与页面骨架落地**：小程序开启 `mp-weixin.cloud`，`src/main.ts` / `src/utils/cloud.ts` 初始化 CloudBase；新增 `src/api/auth.ts` / `src/api/borrow.ts` / `src/api/asset.ts`，教师端登录、借用、可借资产搜索均走云函数。
+- **教师端借用主链路完成代码侧闭环**：完成账密登录 + openid 免密、首页、借用资产搜索、借物车、申请表、签名上传、详情、凭证、归还、我的申请页面；借物车数量按可借数量约束，申请表按 per-item `quantity / expected_return_date / usage` 提交。
+- **可借资产搜索方案 B 已实现**：新增 `borrow.searchAssets` 云函数 action，只返回 `business_status=IDLE` 的可借资产精简字段；同步更新 `docs/04-api-spec.md` 和 `.memory/CHANGELOG.md`。
+- **微信上下文获取修复并已部署**：`auth` / `borrow` 云函数新增 `wx-server-sdk` 读取小程序 `OPENID`，修复 `cloud.getWXContext is not a function`；云端直调已验证退化为业务错误 `2002`。
+- **借用资产页交互重构**：借用页改为顶部小搜索栏 + 中部资产图片网格 + 底部借物车托盘；支持点击加号飞入借物车动画、长按拖拽资产到借物车；首页主要服务与底部 tabbar 的借用入口图标改为资产/借物车语义。
+- **可借资产封面接入并已部署**：`borrow.searchAssets` 新增 `cover_image_file_id`，小程序端批量换取临时链接展示资产封面，无图片时使用本地中性资产占位图形；`borrow` 云函数已重新部署。
+- **wot-ui v2 UI 风格迁移**：按 `docs/ui-style-migration-wot-ui-v2.md` 重构教师端主要页面，统一蓝白办公风、浅灰页面背景、白色卡片、`wd-navbar` / `wd-button` / `wd-icon` / `wd-tag` 等 wot-ui 组件与全局主题变量。
+- **教师端类型自检通过**：本地 `pnpm` 不在 sandbox PATH，改用 `node_modules\.bin\vue-tsc.CMD --noEmit` 等价执行并通过；新增 `borrow.searchAssets` 云函数文件 `node --check` 通过。
+
 ### 2026-05-12
 
 - **cloudfunctions junction 落定**：`d:\Code\AMS\admin\cloudfunctions\` 为真实主目录；`d:\Code\AMS\app\cloudfunctions\` 为 junction 指向 admin。三端写云函数后教师端 agent 直接 `read_file app/cloudfunctions/borrow/index.js` 可取，**消除"小程序端不知道云函数契约"问题**。
-- **教师端鉴权方案锁定**：账号密码登录 + 自动绑定 openid → 后续免密；**OPENID 作为鉴权依据**（来自 `cloud.getWXContext()`，前端不传），不发 token。具体 docs/04 4.6.1 双身份鉴权约定。
+- **教师端鉴权方案锁定**：账号密码登录 + 自动绑定 openid → 后续免密；**OPENID 作为鉴权依据**（来自 `wx-server-sdk.getWXContext()`，前端不传），不发 token。具体 docs/04 4.6.1 双身份鉴权约定。
 - **借用申请字段对齐 `data/资产借用登记表.md`**：`数量 / 拟归还日期 / 用途` 三字段从申请头部下沉到 `items[i]`（per-item），UI 可提供"整单同步"按钮但数据库以 items[i] 为准。详见 docs/03 3.6.1。
 - **docs 全量更新**：
   - `docs/04-api-spec.md` 4.2.1 重整 auth 为 3 个 action（adminLogin / teacherLoginByPassword / teacherLoginByOpenid，含完整入参出参错误码副作用）；4.2.3 borrow 9 个 action 完整契约（含事务步骤、错误码、状态变迁）；新增 4.6 双身份鉴权约定（4.6.1 鉴权双轨伪代码 / 4.6.2 安全约束 / 4.6.3 公共错误码 2001/2002/2003/2004 / 4.6.4 教师端 wx.cloud.callFunction 调用样板 / 4.6.5 管理端样板）。
@@ -61,7 +75,7 @@
 
 ## 进行中
 
-- **教师端启动**：用户即将切换到 `app/` 工作区开新 agent，按 `.memory/HANDOFF_APP.md` 实现登录 + 借用页面（绑定 wx.cloud / 三个登录入口 / 借物车 / 申请表 / 凭证 / 我的申请 / 归还）。
+- **教师端微信开发者工具联调待跑**：代码侧已完成登录 + 借用 + 凭证 + 我的申请 + 归还主链路，尚需用户按要求在微信开发者工具中实测 `pnpm dev:mp` 产物与真机/模拟器交互。
 - **管理端联调待跑**：用户尚未实测 `pnpm dev` 进 `/borrows` 与 Dashboard。需要联调路径：
   1. 教师端 submit 一笔申请 → 管理端 `/borrows` 看到 PENDING → 详情页点「审批通过」→ 资产 Timeline 出 BORROW 日志 → Dashboard「待审批 / 出入仓曲线」数字变化。
   2. 教师端调 cancel / return；管理端代归还。
@@ -95,20 +109,21 @@
 - [x] Dashboard 接入 `borrow.summary`：待审批卡启用、7 天出入仓曲线（2026-05-12）
 - [ ] 通知公告卡（依赖 notice 云函数上线）
 - [x] `admin/src/modules/borrow/`：types / api / BorrowList / BorrowDetail（含审批 / 拒绝 / 代归还 / 签名预览 / 凭证 payload）（2026-05-12）
+- [x] `admin/src/modules/user/`：教师用户管理（列表筛选 / 新增 / 编辑 / 重置密码 / 解绑微信 / 删除保护）+ `user` 云函数上线（2026-05-14）
 
 ### M3 · 教师端 MVP（**当前阶段**）
 
 > 开发指引详见 `.memory/HANDOFF_APP.md`。云函数契约固定在 `docs/04-api-spec.md` 4.2.1 + 4.2.3 + 4.6。
 
-- [ ] `app/manifest.config.ts` 增加 `mp-weixin.cloud = true`，`src/main.ts` 内 `wx.cloud.init({ env: 'ams-d8grnwwy6d8da557f' })`
-- [ ] `app/src/api/borrow.ts`、`app/src/api/auth.ts`：用 `wx.cloud.callFunction` 替换现有 `http.post` 模板（`src/api/login.ts` 是 unibest 模板代码，需重写）
-- [ ] `app/src/pages/login/` 账密登录（首次自动绑 openid）+ 启动时 openid 免密尝试
-- [ ] `app/src/pages/index/` 首页（教师看板 / 常用功能入口）
-- [ ] `app/src/pages/borrow/` 借物车 + 申请表（per-item quantity / expected_return_date / usage）
-- [ ] canvas 手写签名组件 + 上传到云存储 `signature/{teacher_id}/{serial_no}.png`
-- [ ] `app/src/pages/borrow/voucher` 凭证页（解析 `voucher_qr_payload` + 二维码）
-- [ ] `app/src/pages/me/` 我的申请列表 + 归还入口 + 撤回
-- [ ] wot-ui v2 主题色覆盖 `--wot-color-primary: #0096C2`
+- [x] `app/manifest.config.ts` 增加 `mp-weixin.cloud = true`，`src/main.ts` 内初始化 CloudBase（2026-05-14）
+- [x] `app/src/api/borrow.ts`、`app/src/api/auth.ts`：用 `wx.cloud.callFunction` 替换现有 `http.post` 模板（2026-05-14）
+- [x] `app/src/pages/login/` 账密登录（首次自动绑 openid）+ 启动时 openid 免密尝试（2026-05-14）
+- [x] `app/src/pages/index/` 首页（教师看板 / 常用功能入口）（2026-05-14）
+- [x] `app/src/pages/borrow/` 借物车 + 申请表（per-item quantity / expected_return_date / usage）（2026-05-14）
+- [x] canvas 手写签名组件 + 上传到云存储 `signature/{teacher_id}/{serial_no}.png`（2026-05-14）
+- [x] `app/src/pages/borrow/voucher` 凭证页（解析 `voucher_qr_payload`）（2026-05-14）
+- [x] `app/src/pages/me/` 我的申请列表 + 归还入口 + 撤回（2026-05-14）
+- [x] wot-ui v2 主题色覆盖 `--wot-color-primary: #0096C2`（2026-05-14）
 
 ### M4 · 闭环
 
