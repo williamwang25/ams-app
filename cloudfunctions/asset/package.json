@@ -1,0 +1,9 @@
+{
+  "name": "asset",
+  "version": "1.0.0",
+  "description": "AMS 资产云函数：CRUD / 变动 / 列表 / Timeline",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^2.11.0"
+  }
+}

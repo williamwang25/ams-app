@@ -1,0 +1,10 @@
+# OpenAI Codex CLI 配置 · AMS 教师端工作区
+#
+# Codex CLI 的指令性规则统一放在本目录 `AGENTS.md`（自动识别）。
+# 本文件仅声明 MCP（Model Context Protocol）服务器，使 Codex 可调用 CloudBase 工具
+# （包括小程序场景下的 auth-wechat / no-sql-wx-mp-sdk 等规则查询）。
+
+[mcp_servers.cloudbase]
+command = "npx"
+args = ["npm-global-exec@latest", "@cloudbase/cloudbase-mcp@latest"]
+env = { INTEGRATION_IDE = "CodeX" }

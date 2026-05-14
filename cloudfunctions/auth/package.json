@@ -1,0 +1,9 @@
+{
+  "name": "auth",
+  "version": "1.1.0",
+  "description": "AMS 鉴权云函数：管理员账密 + 教师账密绑 openid + openid 免密登录",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^3.16.0"
+  }
+}

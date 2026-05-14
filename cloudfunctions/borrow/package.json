@@ -1,0 +1,9 @@
+{
+  "name": "borrow",
+  "version": "1.0.0",
+  "description": "AMS 借用云函数：教师提交 / 撤回 / 列表，管理员审批 / 拒绝 / 看板，双端归还",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^3.16.0"
+  }
+}
