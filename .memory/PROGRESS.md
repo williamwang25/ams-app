@@ -18,6 +18,14 @@
 
 ## 已完成
 
+### 2026-07-03
+
+- **教师端借用页加号修复**：`src/pages/borrow/index.vue` 将资产卡片右下角加号改为 `touchend.stop` 明确加入借物车，避免父级拖拽 touch 流吞掉 `tap` 导致点击无反应；保留原飞入动画和拖拽加入能力。
+- **教师端首页通知提醒接入**：新增 `src/api/notice.ts` / `src/types/notice.ts`，首页通知栏合并展示本人借用审批提醒（待审批 / 已通过 / 已拒绝）和管理员端已发布公告；借用提醒点击进入申请详情，公告点击弹窗查看内容。
+- **notice 云函数教师端只读路径**：`notice.list({ published_only: true })` 无需管理端 token，仅返回已发布通知安全字段；管理端其他列表模式和通知增删改发布仍需管理员 token。已同步 `docs/04-api-spec.md` 与 `.memory/CHANGELOG.md`。
+- **“我的”页面个人中心**：新增个人信息展示卡和底部编辑弹窗，教师可编辑本人姓名、部门、手机号；账号和微信绑定状态只读。新增 `auth.teacherUpdateProfile` 云函数 action，按 OPENID 反查本人后更新 `ams_teacher` 基础字段，并同步刷新本地 user store。
+- **自检结果**：`node --check cloudfunctions/auth/index.js`、`node --check cloudfunctions/auth/actions/teacherUpdateProfile.js`、`node --check cloudfunctions/notice/index.js`、`node --check cloudfunctions/notice/actions/list.js` 通过；本次涉及前端文件 ESLint 通过。`node_modules\.bin\vue-tsc.CMD --noEmit` 被 `node_modules/@wot-ui/ui/components/wd-button/wd-button.vue` 内部 `ButtonOpenType` 与 `_ButtonOpenType` 不兼容阻塞，未进入本次代码错误。
+
 ### 2026-05-20
 
 - **管理端资产图片上传完成**：新增 `asset.uploadImages` / `asset.resolveImageUrls` 云函数 action、`src/modules/asset/storage.ts`、`AssetImageUploader.vue`、`AssetImageGallery.vue`；资产入库先调用 `asset.create` 获取 `asset_no`，前端转 base64 后经云函数上传图片到 `asset/{asset_no}/`，图片名按 `asset_no-01.ext` / `asset_no-02.ext` 命名，再通过 `asset.update` 回写 `image_urls`；资产编辑支持追加 / 移除图片并保存。
@@ -82,6 +90,7 @@
 
 ## 进行中
 
+- **教师端通知与个人信息联调待跑**：本地代码与语法检查已完成，仍需重新部署 `auth` / `notice` 云函数后，在微信开发者工具中验证首页公告、审批提醒和个人信息保存。
 - **教师端微信开发者工具联调待跑**：代码侧已完成登录 + 借用 + 凭证 + 我的申请 + 归还主链路，尚需用户按要求在微信开发者工具中实测 `pnpm dev:mp` 产物与真机/模拟器交互。
 - **管理端联调待跑**：用户尚未实测 `pnpm dev` 进 `/borrows` 与 Dashboard。需要联调路径：
   1. 教师端 submit 一笔申请 → 管理端 `/borrows` 看到 PENDING → 详情页点「审批通过」→ 资产 Timeline 出 BORROW 日志 → Dashboard「待审批 / 出入仓曲线」数字变化。
