@@ -1,6 +1,8 @@
 <script lang="ts" setup>
 import type { BorrowListMineItem } from '@/types/borrow'
+import type { NoticeItem, NoticeLevel } from '@/types/notice'
 import { listMyBorrows } from '@/api/borrow'
+import { listPublishedNotices } from '@/api/notice'
 import { useUserStore } from '@/store'
 import { getErrorMessage } from '@/utils/cloud'
 import { formatDateTime } from '@/utils/format'
@@ -24,6 +26,19 @@ const userStore = useUserStore()
 const toast = useAppToast()
 const loading = ref(false)
 const borrows = ref<BorrowListMineItem[]>([])
+const publishedNotices = ref<NoticeItem[]>([])
+
+interface HomeNoticeItem {
+  id: string
+  source: 'borrow' | 'notice'
+  title: string
+  desc: string
+  time: number
+  tag: string
+  tagType: 'primary' | 'success' | 'warning' | 'danger' | 'default'
+  content?: string
+  borrowId?: string
+}
 
 const pendingCount = computed(() => borrows.value.filter(item => item.status === 'PENDING').length)
 const approvedCount = computed(() => borrows.value.filter(item => item.status === 'APPROVED').length)
@@ -35,6 +50,52 @@ const monthBorrowCount = computed(() => {
   }).length
 })
 const recentList = computed(() => borrows.value.slice(0, 3))
+const approvalNotices = computed<HomeNoticeItem[]>(() => {
+  return borrows.value
+    .filter(item => item.status === 'PENDING' || item.status === 'APPROVED' || item.status === 'REJECTED')
+    .map((item) => {
+      const statusLabel = BORROW_STATUS_LABEL[item.status]
+      const time = item.approved_at || item.updated_at || item.created_at
+      return {
+        id: `borrow-${item._id}`,
+        source: 'borrow',
+        title: `借用申请${statusLabel}`,
+        desc: `${item.serial_no} · ${item.items.length} 件资产`,
+        time,
+        tag: '审批',
+        tagType: BORROW_STATUS_TAG_TYPE[item.status],
+        borrowId: item._id,
+      }
+    })
+})
+const adminNotices = computed<HomeNoticeItem[]>(() => {
+  return publishedNotices.value.map(item => ({
+    id: `notice-${item._id}`,
+    source: 'notice',
+    title: item.title,
+    desc: item.content,
+    time: item.published_at || item.updated_at || item.created_at,
+    tag: item.level === 'IMPORTANT' ? '重要' : '公告',
+    tagType: getNoticeTagType(item.level),
+    content: item.content,
+  }))
+})
+const noticeItems = computed(() => {
+  return [...approvalNotices.value, ...adminNotices.value]
+    .sort((a, b) => b.time - a.time)
+    .slice(0, 5)
+})
+
+function getNoticeTagType(level: NoticeLevel) {
+  return level === 'IMPORTANT' ? 'warning' : 'primary'
+}
+
+function clipNoticeContent(content: string) {
+  const text = content.trim()
+  if (text.length <= 300)
+    return text
+  return `${text.slice(0, 300)}...`
+}
 
 async function ensureSignedIn() {
   const profile = await userStore.bootstrapAuth()
@@ -46,18 +107,31 @@ async function ensureSignedIn() {
 }
 
 async function loadDashboard() {
-  if (!(await ensureSignedIn())) return
+  if (!(await ensureSignedIn()))
+    return
   loading.value = true
-  try {
-    const result = await listMyBorrows({ page: 1, pageSize: 100 })
-    borrows.value = result.list
+  const [borrowResult, noticeResult] = await Promise.allSettled([
+    listMyBorrows({ page: 1, pageSize: 100 }),
+    listPublishedNotices(5),
+  ])
+
+  if (borrowResult.status === 'fulfilled') {
+    borrows.value = borrowResult.value.list
   }
-  catch (error) {
-    toast.error(getErrorMessage(error))
+  else {
+    borrows.value = []
+    toast.error(getErrorMessage(borrowResult.reason))
   }
-  finally {
-    loading.value = false
+
+  if (noticeResult.status === 'fulfilled') {
+    publishedNotices.value = noticeResult.value.list
   }
+  else {
+    publishedNotices.value = []
+    toast.warning(`通知加载失败：${getErrorMessage(noticeResult.reason)}`)
+  }
+
+  loading.value = false
 }
 
 function goBorrow() {
@@ -74,6 +148,19 @@ function goReturn() {
 
 function goDetail(id: string) {
   uni.navigateTo({ url: `/pages/borrow/detail?id=${id}` })
+}
+
+function handleNoticeClick(item: HomeNoticeItem) {
+  if (item.source === 'borrow' && item.borrowId) {
+    goDetail(item.borrowId)
+    return
+  }
+  uni.showModal({
+    title: item.title,
+    content: clipNoticeContent(item.content || item.desc || '暂无内容'),
+    showCancel: false,
+    confirmColor: '#0096C2',
+  })
 }
 
 onShow(() => {
@@ -137,12 +224,34 @@ onPullDownRefresh(() => {
             通知提醒
           </view>
         </view>
-        <view class="notice-row">
-          <view class="notice-dot" />
-          <view class="notice-text">
-            申请通过后可在详情页查看凭证，已通过申请可发起整单归还。
+
+        <wd-empty v-if="!loading && noticeItems.length === 0" description="暂无通知" />
+        <block v-else>
+          <view
+            v-for="item in noticeItems"
+            :key="item.id"
+            class="notice-row"
+            @click="handleNoticeClick(item)"
+          >
+            <view class="notice-main">
+              <view class="notice-title-line">
+                <view class="notice-title">
+                  {{ item.title }}
+                </view>
+                <wd-tag :type="item.tagType">
+                  {{ item.tag }}
+                </wd-tag>
+              </view>
+              <view class="notice-text">
+                {{ item.desc }}
+              </view>
+              <view class="notice-time">
+                {{ formatDateTime(item.time) }}
+              </view>
+            </view>
+            <view class="notice-arrow" />
           </view>
-        </view>
+        </block>
       </view>
 
       <view class="service-list">
@@ -293,22 +402,61 @@ onPullDownRefresh(() => {
 
 .notice-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  padding: 22rpx 0;
+  border-bottom: 1rpx solid var(--app-divider);
 }
 
-.notice-dot {
-  width: 12rpx;
-  height: 12rpx;
-  border-radius: 50%;
-  background-color: var(--app-color-primary);
-  margin: 12rpx 18rpx 0 0;
-  flex-shrink: 0;
+.notice-row:last-child {
+  border-bottom: 0;
+}
+
+.notice-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.notice-title-line {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+}
+
+.notice-title {
+  flex: 1;
+  min-width: 0;
+  color: var(--app-text-title);
+  font-size: 28rpx;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .notice-text {
+  margin-top: 8rpx;
   color: var(--app-text-body);
-  font-size: 26rpx;
-  line-height: 1.6;
+  font-size: 24rpx;
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notice-time {
+  margin-top: 6rpx;
+  color: var(--app-text-muted);
+  font-size: 22rpx;
+}
+
+.notice-arrow {
+  width: 14rpx;
+  height: 14rpx;
+  border-top: 3rpx solid #a0a8ad;
+  border-right: 3rpx solid #a0a8ad;
+  transform: rotate(45deg);
+  margin-left: 18rpx;
+  flex-shrink: 0;
 }
 
 .service-list {

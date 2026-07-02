@@ -49,7 +49,7 @@
 
 ### 4.2.1 `auth`
 
-> **当前实现（M1 / M2）**：仅 `adminLogin` 已部署。`teacherLoginByPassword` / `teacherLoginByOpenid` 在 borrow 模块开发时同步落地。
+> **当前实现（M1 / M2）**：`adminLogin` / `teacherLoginByPassword` / `teacherLoginByOpenid` / `teacherUpdateProfile` 已落地。
 > `getProfile` / `changePassword` / `teacherBindOpenid` 一期不实现：管理员 profile 由 `adminLogin` 返回后前端缓存即可；教师 openid 绑定合并进 `teacherLoginByPassword`。
 
 #### 4.2.1.1 `adminLogin`（已实现）
@@ -132,6 +132,35 @@
   - `2002` 缺少微信上下文
   - `2003` openid 未绑定（前端应跳转账密登录页）
 
+#### 4.2.1.4 `teacherUpdateProfile`
+
+- **角色**：教师（OPENID 鉴权）
+- **入参**：`{ name: string, phone?: string, department?: string }`
+- **副作用**：用 `wx-server-sdk.getWXContext().OPENID` 反查当前教师，仅更新本人 `name` / `phone` / `department` 与 `updated_at`；不允许修改 `username` / `password` / `openid`。
+- **成功返回**：
+
+```jsonc
+{
+  "code": 0,
+  "data": {
+    "profile": {
+      "_id": "seed_t001",
+      "username": "t001",
+      "name": "张三",
+      "department": "软件学院",
+      "phone": "13800000000",
+      "openid": "<bound openid>"
+    }
+  }
+}
+```
+
+- **错误码**：
+  - `1001` 入参缺失 / 长度错误
+  - `2002` 缺少微信上下文
+  - `2003` openid 未绑定教师
+  - `5001` 数据库写入失败
+
 ### 4.2.2 `asset`
 
 | action | 角色 | 说明 |
@@ -141,6 +170,8 @@
 | `changeStatus` | 管理员 | 变更 `business_status`（如 IDLE↔MAINTAIN / SCRAP），写日志 |
 | `changeLocation` | 管理员 | 变更存放地点，写日志 `LOCATION_CHANGE` |
 | `changeUser` | 管理员 | 变更使用人，写日志 `USER_CHANGE` |
+| `uploadImages` | 管理员 | 上传资产图片到云存储，返回 fileID；用于管理端绕开浏览器直传 storage 权限限制 |
+| `resolveImageUrls` | 管理员 | 批量解析资产图片临时 URL；用于管理端绕开浏览器直接调用 storage |
 | `getTimeline` | 管理员 / 教师 | 查询 `ams_asset_log` 单资产历史 |
 | `getDetail` | 管理员 / 教师 | 获取资产详情 |
 
@@ -364,7 +395,7 @@
 
 Dashboard 看板用，与 `asset.summary` 对齐风格。
 
-- **入参**：`{}`
+- **入参**：`{ days?: 7 | 30 | 90 }` — 趋势天数，默认 7
 - **副作用**：无
 - **成功返回**：
 
@@ -376,10 +407,27 @@ Dashboard 看板用，与 `asset.summary` 对齐风格。
     "lent_count": 12,             // 借出中数（资产维度，可由 asset.summary 提供，这里冗余便于一次拉取）
     "today_borrow": 2,            // 今日新增申请数
     "today_return": 1,            // 今日归还数
-    "trend_7d": [                 // 最近 7 天出入仓曲线
-      { "date": "2026-05-06", "borrow": 1, "return": 0 },
-      // ...
-    ]
+    "trend_days": 7,              // 实际趋势天数
+    "trend": [                    // 最近 N 天出入仓曲线（N = days）
+      {
+        "date": "2026-05-06",
+        "borrow": 1,
+        "return": 0,
+        "borrow_amount": 1060.0,
+        "return_amount": 0
+      }
+    ],
+    "trend_7d": [ /* 与 trend 相同，向后兼容 */ ],
+    "inout_stats": {
+      "today": {
+        "borrow_count": 2,
+        "return_count": 1,
+        "borrow_amount": 2000.0,
+        "return_amount": 1060.0
+      },
+      "month": { /* 同结构 */ },
+      "total": { /* 同结构 */ }
+    }
   }
 }
 ```
@@ -408,12 +456,14 @@ Dashboard 看板用，与 `asset.summary` 对齐风格。
 
 | action | 角色 | 说明 |
 |--------|------|------|
-| `create` | 管理员 | 发布通知 |
-| `update` | 管理员 | 修改通知 |
-| `publish` | 管理员 | 上下架 |
-| `delete` | 管理员 | 删除 |
+| `create` | 管理员 | 新建通知（默认未发布） |
+| `update` | 管理员 | 修改标题 / 内容 / 级别 |
+| `publish` | 管理员 | 上下架；入参 `{ id, published: boolean }` |
+| `delete` | 管理员 | 删除通知 |
+| `list` | 管理员 / 教师只读 | 分页列表；管理端支持 `published_only` / `published` / `level` / `keyword`；教师端仅允许 `published_only=true` 拉取已发布通知 |
+| `getDetail` | 管理员 | 单条详情 |
 
-> 一期列表读取走云函数；后期可考虑走 SDK 直连。
+> 集合 `ams_notice`；除 `list({ published_only: true })` 作为教师端首页只读公告入口外，其余通知 action 鉴权与其他业务云函数一致（`event.auth.token === ADMIN_PASSWORD`）。教师端只读列表返回已发布通知的 `_id / title / content / level / published / published_at / created_at / updated_at`，不返回 `created_by`。
 
 ### 4.2.7 `init`（一期已下线）
 
@@ -526,11 +576,13 @@ Dashboard 看板用，与 `asset.summary` 对齐风格。
 
 ## 4.5 图片 / 签名上传
 
-- 前端使用 `app.uploadFile({ cloudPath, filePath })` 直传云存储，路径建议：
-  - 资产图片：`asset/{asset_no}/{timestamp}-{random}.jpg`
-  - 签名图片：`signature/{teacher_id}/{borrow_serial_no}.png`
-- 上传成功得到 `fileID`，再调用对应云函数（`asset.create` / `borrow.submit`）落库。
-- 渲染时通过 `app.getTempFileURL({ fileList })` 转 https 链接。
+- 管理端资产图片：前端先校验 `File` 并转 base64，再调用 `asset.uploadImages`，由云函数使用 Node SDK 写入云存储；路径统一为 `asset/{asset_no}/{asset_no}-{seq}.{ext}`，例如 `asset/YQJJ2026000004/YQJJ2026000004-01.jpg`。
+- `asset.uploadImages` 入参：`{ asset_no: string, files: [{ name: string, content_type: 'image/jpeg'|'image/png'|'image/webp', base64: string }] }`；单次最多 8 张，单张不超过 5MB。
+- `asset.uploadImages` 成功返回：`{ fileIDs: string[], files: [{ fileID, cloudPath, content_type, size }] }`。管理端再调用 `asset.update` 将 fileID 数组写入 `ams_asset.image_urls`。
+- 教师端签名图片可继续按平台 SDK 上传，建议路径：`signature/{teacher_id}/{borrow_serial_no}.png`。
+- 上传成功得到 `fileID`，再调用对应云函数（`asset.update` / `borrow.submit`）落库。
+- 管理端渲染资产图片时调用 `asset.resolveImageUrls({ fileIDs, maxAge })` 转 https 临时链接，不在浏览器直接调用 storage API。
+- 教师端签名 / 小程序侧图片渲染仍可按平台 SDK 能力通过 `getTempFileURL` 转 https 链接。
 
 ## 4.6 双身份鉴权约定
 

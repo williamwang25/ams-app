@@ -89,7 +89,7 @@
 ### 5.4.2 入库 `/assets/new`
 
 - 单条表单，分组展示（基础 / 财务 / 归属 / 取得 / 业务）。
-- 图片上传（多张，云存储）。
+- 图片上传（多张，云存储）：先入库生成 `asset_no`，前端转 base64 后通过 `asset.uploadImages` 云函数上传到 `asset/{asset_no}/`，图片名按 `asset_no-01.ext` / `asset_no-02.ext` 命名，最后回写 `image_urls`。
 - 资产编号：默认置灰提示"系统将根据国标分类自动生成"，可由超管手动覆盖。
 - 提交调用 `asset.create`。
 

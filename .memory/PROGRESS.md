@@ -18,6 +18,13 @@
 
 ## 已完成
 
+### 2026-05-20
+
+- **管理端资产图片上传完成**：新增 `asset.uploadImages` / `asset.resolveImageUrls` 云函数 action、`src/modules/asset/storage.ts`、`AssetImageUploader.vue`、`AssetImageGallery.vue`；资产入库先调用 `asset.create` 获取 `asset_no`，前端转 base64 后经云函数上传图片到 `asset/{asset_no}/`，图片名按 `asset_no-01.ext` / `asset_no-02.ext` 命名，再通过 `asset.update` 回写 `image_urls`；资产编辑支持追加 / 移除图片并保存。
+- **资产编号递增修复**：修复 `cloudfunctions/asset/utils/seq.js` 对 CloudBase `doc().get()` 返回结构的兼容读取，并将计数器初始化改为 `doc(key).set(...)`；`asset_no` 生成时会跳过已存在编号，避免历史重复编号继续影响后续入库。
+- **资产图片展示接入**：资产列表显示首图缩略图，资产详情展示图片图库，所有预览通过 `asset.resolveImageUrls` 解析临时 URL，不拼接公开 URL。
+- **自检结果**：CloudBase 环境 `ams-d8grnwwy6d8da557f` 查询正常；`node --check`、`vue-tsc --noEmit`、ESLint、`npm run build` 通过；`asset` 云函数已更新并云端 smoke 验证 `create` 生成 `YQJJ2026000004`、`uploadImages` 生成 `asset/YQJJ2026000004/YQJJ2026000004-01.png` / `-02.png`、`resolveImageUrls` 返回 `code=0`，测试资产 / 日志 / 图片已删除。浏览器直传曾因 storage 403 / 本地安全域名套餐限制受阻，现改为资产图片上传与临时 URL 解析都走 `asset` 云函数。smoke 已消耗序列号 `000004`，当前 `ams_seq.asset_no:YQJJ:2026.n=4`，下一次真实入库会生成 `YQJJ2026000005`。
+
 ### 2026-05-14
 
 - **管理端教师用户管理完成并上线**：新增 `cloudfunctions/user` Event 云函数（`listTeachers` / `createTeacher` / `updateTeacher` / `resetTeacherPassword` / `unbindTeacherOpenid` / `deleteTeacher`），超管 token 鉴权，列表不返回 `password`，删除教师会检查 `ams_borrow_request` 防止历史单据失去归属；`cloudbaserc.json` 已登记 `user`。
@@ -104,6 +111,7 @@
 - [x] `admin/src/modules/asset/pages/AssetList.vue`：表格 + 筛选 + 服务端分页
 - [x] `admin/src/modules/asset/pages/AssetCreate.vue`：入库表单（5 分组），提交跳详情
 - [x] `admin/src/modules/asset/pages/AssetDetail.vue`：详情字段 tab + Timeline tab
+- [x] `admin/src/modules/asset/`：资产图片上传到云存储 + 列表缩略图 + 详情图库 + 编辑图片（2026-05-20）
 - [x] `admin/src/modules/asset/pages/AssetDetail.vue` 增补：编辑 / 状态变更 / 位置变更 / 使用人变更 4 个 modal（接入 `update` / `changeStatus` / `changeLocation` / `changeUser`）
 - [x] `admin/src/modules/dashboard/` 看板首期实数据接入（3 枚有效指标卡 + 总值卡 + 待审批占位 + 按状态分布 + 部门 Top 10）——只调一次 `asset.summary` 拿全部数字
 - [x] Dashboard 接入 `borrow.summary`：待审批卡启用、7 天出入仓曲线（2026-05-12）

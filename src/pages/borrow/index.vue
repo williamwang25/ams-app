@@ -82,8 +82,8 @@ const dragStyle = computed<Record<string, string>>(() => ({
 }))
 
 const flightStyle = computed<Record<string, string>>(() => ({
-  left: `${flightState.value.fromX}px`,
-  top: `${flightState.value.fromY}px`,
+  'left': `${flightState.value.fromX}px`,
+  'top': `${flightState.value.fromY}px`,
   '--fly-x': `${flightState.value.toX - flightState.value.fromX}px`,
   '--fly-y': `${flightState.value.toY - flightState.value.fromY}px`,
 }))
@@ -123,7 +123,8 @@ function getPoint(event: MiniTouchEvent): TouchPoint | null {
 
 function normalizeRect(rect: UniApp.NodeInfo | UniApp.NodeInfo[] | null | undefined): CartRect | null {
   const node = Array.isArray(rect) ? rect[0] : rect
-  if (!node) return null
+  if (!node)
+    return null
   const { left, right, top, bottom, width, height } = node
   if (
     typeof left !== 'number'
@@ -167,7 +168,8 @@ function getCartTarget(): TouchPoint {
 
 function isPointInCart(point: TouchPoint) {
   const rect = cartRect.value
-  if (!rect) return false
+  if (!rect)
+    return false
   return (
     point.clientX >= rect.left - 16
     && point.clientX <= rect.right + 16
@@ -207,7 +209,8 @@ async function hydrateAssetCovers(assets: SearchAssetItem[]) {
 }
 
 async function loadAssets() {
-  if (!(await ensureSignedIn())) return
+  if (!(await ensureSignedIn()))
+    return
   loading.value = true
   try {
     const result = await searchAssets({
@@ -228,8 +231,10 @@ async function loadAssets() {
 }
 
 function runAddAnimation(asset: SearchAssetItem, startPoint: TouchPoint | null) {
-  if (flightStartTimer) clearTimeout(flightStartTimer)
-  if (flightEndTimer) clearTimeout(flightEndTimer)
+  if (flightStartTimer)
+    clearTimeout(flightStartTimer)
+  if (flightEndTimer)
+    clearTimeout(flightEndTimer)
 
   const from = startPoint || lastTouchPoint.value || {
     clientX: uni.getSystemInfoSync().windowWidth / 2,
@@ -262,7 +267,7 @@ function addAsset(asset: SearchAssetItem, startPoint: TouchPoint | null) {
   measureCartZone()
 }
 
-function addFromTap(asset: SearchAssetItem, event: MiniTouchEvent) {
+function addFromButton(asset: SearchAssetItem, event: MiniTouchEvent) {
   const point = getPoint(event)
   addAsset(asset, point)
 }
@@ -276,7 +281,8 @@ function rememberTouch(event: MiniTouchEvent) {
 
 function prepareDrag(asset: SearchAssetItem, event: MiniTouchEvent) {
   const point = getPoint(event)
-  if (!point) return
+  if (!point)
+    return
   lastTouchPoint.value = point
   pendingDrag.value = {
     asset,
@@ -287,7 +293,8 @@ function prepareDrag(asset: SearchAssetItem, event: MiniTouchEvent) {
 }
 
 function startDrag(asset: SearchAssetItem, point: TouchPoint) {
-  if (!point) return
+  if (!point)
+    return
   dragState.value = {
     asset,
     canDrop: isPointInCart(point),
@@ -300,7 +307,8 @@ function startDrag(asset: SearchAssetItem, point: TouchPoint) {
 
 function handleTouchMove(event: MiniTouchEvent) {
   const point = getPoint(event)
-  if (!point) return
+  if (!point)
+    return
   lastTouchPoint.value = point
   if (!dragState.value.visible && pendingDrag.value) {
     const dx = point.clientX - pendingDrag.value.startX
@@ -310,7 +318,8 @@ function handleTouchMove(event: MiniTouchEvent) {
       pendingDrag.value = null
     }
   }
-  if (!dragState.value.visible) return
+  if (!dragState.value.visible)
+    return
   dragState.value = {
     ...dragState.value,
     canDrop: isPointInCart(point),
@@ -321,7 +330,8 @@ function handleTouchMove(event: MiniTouchEvent) {
 
 function handleTouchEnd(event: MiniTouchEvent) {
   pendingDrag.value = null
-  if (!dragState.value.visible) return
+  if (!dragState.value.visible)
+    return
   const point = getPoint(event) || lastTouchPoint.value
   const asset = dragState.value.asset
   const shouldDrop = point ? isPointInCart(point) : false
@@ -372,8 +382,10 @@ onShow(() => {
 })
 
 onUnmounted(() => {
-  if (flightStartTimer) clearTimeout(flightStartTimer)
-  if (flightEndTimer) clearTimeout(flightEndTimer)
+  if (flightStartTimer)
+    clearTimeout(flightStartTimer)
+  if (flightEndTimer)
+    clearTimeout(flightEndTimer)
 })
 </script>
 
@@ -436,7 +448,7 @@ onUnmounted(() => {
                 class="add-bubble"
                 :class="{ added: isInCart(asset._id) }"
                 @touchstart.stop="rememberTouch"
-                @tap.stop="addFromTap(asset, $event)"
+                @touchend.stop="addFromButton(asset, $event)"
               >
                 <view class="plus-line horizontal" />
                 <view class="plus-line vertical" />
@@ -822,7 +834,9 @@ onUnmounted(() => {
   border: 2rpx solid transparent;
   padding: 24rpx;
   box-sizing: border-box;
-  transition: border-color 0.18s ease, transform 0.18s ease;
+  transition:
+    border-color 0.18s ease,
+    transform 0.18s ease;
 }
 
 .cart-dock.drop-ready {
@@ -1031,7 +1045,9 @@ onUnmounted(() => {
 }
 
 .flight-card {
-  transition: transform 0.46s cubic-bezier(0.2, 0.78, 0.2, 1), opacity 0.46s ease;
+  transition:
+    transform 0.46s cubic-bezier(0.2, 0.78, 0.2, 1),
+    opacity 0.46s ease;
 }
 
 .flight-card.active {

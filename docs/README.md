@@ -20,6 +20,7 @@
 | 09 | [`09-dev-conventions.md`](./09-dev-conventions.md) | 目录结构、命名、协作边界 |
 | 10 | [`10-init-and-deploy.md`](./10-init-and-deploy.md) | 初始化云函数、部署指南 |
 | 11 | [`11-open-questions.md`](./11-open-questions.md) | 未明确、待后续讨论事项 |
+| 12 | [`12-github-collaboration.md`](./12-github-collaboration.md) | GitHub 多人协作指南、提交规范、云函数部署权限 |
 
 ## 术语表
 

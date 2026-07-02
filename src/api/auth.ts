@@ -1,4 +1,4 @@
-import type { TeacherLoginResult, TeacherProfile } from '@/types/auth'
+import type { TeacherLoginResult, TeacherProfile, TeacherProfileUpdateInput } from '@/types/auth'
 import { callCloud, CloudFunctionError } from '@/utils/cloud'
 
 export function teacherLoginByPassword(username: string, password: string) {
@@ -16,4 +16,8 @@ export async function teacherLoginByOpenid(): Promise<TeacherProfile | null> {
     }
     throw error
   }
+}
+
+export function teacherUpdateProfile(input: TeacherProfileUpdateInput) {
+  return callCloud<TeacherLoginResult>('auth', 'teacherUpdateProfile', input)
 }

@@ -1,0 +1,9 @@
+{
+  "name": "notice",
+  "version": "1.0.0",
+  "description": "AMS notice cloud function",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^3.16.0"
+  }
+}

@@ -110,6 +110,7 @@ tcb fn deploy <func>
 ## 10.7 云存储配置
 
 - 一期创建目录：需要上传时再手动建 `asset/`、`signature/`。
+- 资产图片路径统一为 `asset/{asset_no}/{asset_no}-{seq}.{ext}`，管理端通过 `asset.uploadImages` 云函数写入云存储，前端保存 `fileID` 到 `ams_asset.image_urls`，展示时通过 `asset.resolveImageUrls` 解析临时链接。
 - **一期存储权限保持默认**，不额外配置安全规则；上传 `fileID` 由云函数落库，读取走云函数包装后返回临时 URL。
 - **后期收口**参考原设计：
   - `asset/*`：所有登录用户可读，仅管理员可写。

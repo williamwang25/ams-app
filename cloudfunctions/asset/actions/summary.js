@@ -2,24 +2,9 @@
  * asset.summary：资产看板聚合查询。
  *
  * 入参：无
- * 出参：
- *   {
- *     total: number,                                  // 资产总条数
- *     total_value: number,                            // 单价合计（元）
- *     large_count: number,                            // 大型资产条数（is_large=true）
- *     large_value: number,                            // 大型资产单价合计
- *     by_status: {                                    // 各业务状态计数 + 金额
- *       IDLE: { count, value },
- *       IN_USE: { count, value },
- *       LENT: { count, value },
- *       PENDING: { count, value },
- *       MAINTAIN: { count, value },
- *       SCRAPPED: { count, value },
- *     },
- *     by_dept: Array<{ dept_name, count, value }>,    // 按部门分组 top 10
- *   }
- *
- * 实现：CloudBase 聚合一次性出全部数字。
+ * 出参扩展（0702）：
+ *   by_dept[].lent_count  各部门当前借出数
+ *   large_lent_count      大型资产借出中数量
  */
 
 const { db, COLLECTIONS } = require('../utils/db');
@@ -36,7 +21,6 @@ module.exports = async (event) => {
 
   const col = db.collection(COLLECTIONS.ASSET);
 
-  // 1. 总数（用 count 即可，便宜）
   const totalRes = await col.count();
   const total = totalRes.total || 0;
 
@@ -46,12 +30,12 @@ module.exports = async (event) => {
       total_value: 0,
       large_count: 0,
       large_value: 0,
+      large_lent_count: 0,
       by_status: emptyByStatus(),
       by_dept: [],
     });
   }
 
-  // 2. 按业务状态聚合：count + value
   const byStatusRes = await col
     .aggregate()
     .group({
@@ -74,7 +58,6 @@ module.exports = async (event) => {
     }
   }
 
-  // 3. 大型资产：单独 match + group
   const largeRes = await col
     .aggregate()
     .match({ is_large: true })
@@ -87,7 +70,9 @@ module.exports = async (event) => {
   const large_count = largeRes.data && largeRes.data[0] ? Number(largeRes.data[0].count) || 0 : 0;
   const large_value = largeRes.data && largeRes.data[0] ? Number(largeRes.data[0].value) || 0 : 0;
 
-  // 4. 按部门聚合：top 10（含未设置部门的 null 项，前端按需展示）
+  const largeLentRes = await col.where({ is_large: true, business_status: 'LENT' }).count();
+  const large_lent_count = (largeLentRes && largeLentRes.total) || 0;
+
   const byDeptRes = await col
     .aggregate()
     .group({
@@ -98,17 +83,37 @@ module.exports = async (event) => {
     .sort({ count: -1 })
     .limit(10)
     .end();
-  const by_dept = (byDeptRes.data || []).map((row) => ({
-    dept_name: row._id || '未分部门',
-    count: Number(row.count) || 0,
-    value: Number(row.value) || 0,
-  }));
+
+  const lentByDeptRes = await col
+    .aggregate()
+    .match({ business_status: 'LENT' })
+    .group({
+      _id: '$dept_name',
+      lent_count: $.sum(1),
+    })
+    .end();
+
+  const lentMap = new Map();
+  for (const row of lentByDeptRes.data || []) {
+    lentMap.set(row._id || '未分部门', Number(row.lent_count) || 0);
+  }
+
+  const by_dept = (byDeptRes.data || []).map((row) => {
+    const dept_name = row._id || '未分部门';
+    return {
+      dept_name,
+      count: Number(row.count) || 0,
+      value: Number(row.value) || 0,
+      lent_count: lentMap.get(dept_name) || 0,
+    };
+  });
 
   return ok({
     total,
     total_value,
     large_count,
     large_value,
+    large_lent_count,
     by_status,
     by_dept,
   });

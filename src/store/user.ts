@@ -1,10 +1,11 @@
-import type { TeacherProfile } from '@/types/auth'
+import type { TeacherProfile, TeacherProfileUpdateInput } from '@/types/auth'
 import type { UserInfo } from '@/types/user'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import {
   teacherLoginByOpenid as requestTeacherLoginByOpenid,
   teacherLoginByPassword as requestTeacherLoginByPassword,
+  teacherUpdateProfile as requestTeacherUpdateProfile,
 } from '@/api/auth'
 import { CloudFunctionError } from '@/utils/cloud'
 
@@ -69,6 +70,12 @@ export const useUserStore = defineStore(
       return result
     }
 
+    async function updateProfile(input: TeacherProfileUpdateInput) {
+      const result = await requestTeacherUpdateProfile(input)
+      setProfile(result.profile)
+      return result.profile
+    }
+
     async function bootstrapAuth() {
       if (profile.value) {
         return profile.value
@@ -129,6 +136,7 @@ export const useUserStore = defineStore(
       setProfile,
       setUserAvatar,
       setUserInfo,
+      updateProfile,
     }
   },
   {

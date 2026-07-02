@@ -5,6 +5,7 @@
  *   - adminLogin                管理员账密登录（硬编码账号，零环境变量）
  *   - teacherLoginByPassword    教师账密首登 + 自动绑 openid（首次注入 5 条种子）
  *   - teacherLoginByOpenid      教师 openid 免密登录
+ *   - teacherUpdateProfile      教师端编辑本人基础资料
  *
  * 鉴权契约：
  *   管理端：adminLogin 成功返回 token = ADMIN_PASSWORD；其他业务云函数比对
@@ -17,6 +18,7 @@ const actions = {
   adminLogin: require('./actions/adminLogin'),
   teacherLoginByPassword: require('./actions/teacherLoginByPassword'),
   teacherLoginByOpenid: require('./actions/teacherLoginByOpenid'),
+  teacherUpdateProfile: require('./actions/teacherUpdateProfile'),
 };
 
 exports.main = async (event) => {

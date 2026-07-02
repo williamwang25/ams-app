@@ -3,8 +3,8 @@
  * 契约：docs/04-api-spec.md 4.2.2。
  *
  * 已实现 actions（M1 管理端）：
- *   写：create / update / changeStatus / changeLocation / changeUser
- *   读：getDetail / getTimeline / list / summary
+ *   写：create / update / changeStatus / changeLocation / changeUser / uploadImages
+ *   读：getDetail / getTimeline / list / summary / resolveImageUrls
  *
  * 鉴权：所有 action 必须带 event.auth.token === utils/credentials.js 中
  *       的 ADMIN_PASSWORD，否则返回 2001（auth.js 中实现）。
@@ -22,10 +22,12 @@ const actions = {
   changeStatus: require('./actions/changeStatus'),
   changeLocation: require('./actions/changeLocation'),
   changeUser: require('./actions/changeUser'),
+  uploadImages: require('./actions/uploadImages'),
   getDetail: require('./actions/getDetail'),
   getTimeline: require('./actions/getTimeline'),
   list: require('./actions/list'),
   summary: require('./actions/summary'),
+  resolveImageUrls: require('./actions/resolveImageUrls'),
 };
 
 exports.main = async (event) => {
